@@ -1,0 +1,284 @@
+# E-Commerce data analysis code
+# Import necessary libraries
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.metrics import accuracy_score, classification_report
+from wordcloud import WordCloud
+
+# Load the dataset
+ecommerce_data = pd.read_json('fashion_products_dataset.json')
+df = ecommerce_data
+
+df.head()
+
+# Display basic information about the dataset
+print("Dataset Information:")
+print(df.info())
+
+# Visualize missing values
+plt.figure(figsize=(10, 6))
+sns.heatmap(df.isnull(), cbar=False, cmap='viridis')
+plt.title('Missing Values Heatmap')
+plt.show()
+
+# Explore product categories and brands
+plt.figure(figsize=(12, 6))
+sns.countplot(x='category', data=df, order=df['category'].value_counts().index)
+plt.title('Distribution of Products across Categories')
+plt.xticks(rotation=45, ha='right')
+plt.show()
+
+plt.figure(figsize=(12, 6))
+top_brands = df['brand'].value_counts().index[:20]
+sns.countplot(x='brand', data=df[df['brand'].isin(top_brands)], order=top_brands)
+plt.title('Distribution of Products across Top 20 Brands')
+plt.xticks(rotation=45, ha='right')
+plt.show()
+
+plt.figure(figsize=(12, 6))
+
+# Count the occurrences of each category
+category_counts = df['category'].value_counts()
+
+# Plot the distribution of products across categories
+sns.countplot(x='category', data=df, order=category_counts.index)
+
+# Add annotations with category names and percentage of popularity
+total_products = len(df)
+for i, category in enumerate(category_counts.index):
+    count = category_counts[category]
+    percentage = (count / total_products) * 100
+    plt.text(i, count + 5, f'{category}\n{percentage:.2f}%', ha='center', va='bottom', rotation=45)
+
+plt.title('Distribution of Products across Categories')
+plt.xticks(rotation=45, ha='right')
+plt.show()
+
+
+plt.figure(figsize=(12, 6))
+
+# Count the occurrences of each brand
+brand_counts = df['brand'].value_counts()
+
+# Select the top 20 brands
+top_brands = brand_counts.index[:20]
+
+# Filter the dataframe for the top 20 brands
+df_top_brands = df[df['brand'].isin(top_brands)]
+
+# Plot the distribution of products across top 20 brands
+sns.countplot(x='brand', data=df_top_brands, order=top_brands)
+
+# Add annotations with brand names and percentage of popularity
+total_products = len(df_top_brands)
+for i, brand in enumerate(top_brands):
+    count = brand_counts[brand]
+    percentage = (count / total_products) * 100
+    plt.text(i, count + 5, f'{brand}\n{percentage:.2f}%', ha='center', va='bottom', rotation=45)
+
+plt.title('Distribution of Products across Top 20 Brands')
+plt.xticks(rotation=45, ha='right')
+plt.show()
+
+
+# Analyze pricing trends and discount strategies
+plt.figure(figsize=(12, 6))
+sns.histplot(df['actual_price'], bins=30, kde=True)
+plt.title('Distribution of Actual Prices')
+plt.show()
+
+plt.figure(figsize=(12, 6))
+sns.histplot(df['discount'], bins=30, kde=True)
+plt.title('Distribution of Discounts')
+plt.show()
+
+
+# Analyze seller behavior and performance
+plt.figure(figsize=(12, 6))
+
+# Explore distribution of sellers
+sns.countplot(x='seller', data=df, order=df['seller'].value_counts().index)
+plt.title('Distribution of Products across Sellers')
+plt.xticks(rotation=45, ha='right')
+plt.show()
+
+# Explore seller ratings distribution
+plt.figure(figsize=(12, 6))
+sns.histplot(df['average_rating'], bins=30, kde=True)
+plt.title('Distribution of Seller Ratings')
+plt.show()
+
+# Explore seller discount strategies for the top 20 sellers
+plt.figure(figsize=(12, 6))
+
+# Select the top 20 sellers
+top_sellers = df['seller'].value_counts().index[:10]
+
+# Filter the dataframe for the top 20 sellers
+df_top_sellers = df[df['seller'].isin(top_sellers)]
+
+# Create a scatter plot for discount strategies and average ratings
+sns.scatterplot(x='discount', y='average_rating', data=df_top_sellers, hue='seller', alpha=0.5)
+plt.title('Seller Discount Strategies and Average Ratings for Top 20 Sellers')
+plt.legend(title='Seller')
+plt.show()
+
+
+# Additional analyses can be added based on your objectives
+
+# Convert 'average_rating' to numeric
+df['average_rating'] = pd.to_numeric(df['average_rating'], errors='coerce')
+
+# Identify top 20 performing sellers
+top_sellers = df.groupby('seller')['average_rating'].mean().sort_values(ascending=False).head(20)
+
+# Display the top 20 performing sellers
+print("Top 20 Performing Sellers:")
+for seller, avg_rating in top_sellers.items():
+    print(f"Seller: {seller}, Average Rating: {avg_rating:.2f}")
+
+
+# Explore average ratings
+plt.figure(figsize=(12, 6))
+sns.countplot(x='average_rating', data=df)
+plt.title('Distribution of Average Ratings')
+plt.show()
+
+# Investigating Customer Preferences and Product Satisfaction
+
+# Explore customer ratings and satisfaction
+plt.figure(figsize=(12, 6))
+sns.countplot(x='average_rating', data=df)
+plt.title('Distribution of Average Ratings')
+plt.show()
+
+# Analyze product satisfaction by category
+plt.figure(figsize=(12, 6))
+sns.countplot(x='category', hue='average_rating', data=df)
+plt.title('Product Satisfaction Across Categories')
+plt.xticks(rotation=45, ha='right')
+plt.legend(title='Average Rating')
+plt.show()
+
+# Analyze product satisfaction by brand
+plt.figure(figsize=(12, 6))
+sns.countplot(x='brand', hue='average_rating', data=df[df['brand'].isin(top_brands)])
+plt.title('Product Satisfaction Across Top 10 Brands')
+plt.xticks(rotation=45, ha='right')
+plt.legend(title='Average Rating')
+plt.show()
+
+
+# Investigate customer preferences in terms of pricing
+plt.figure(figsize=(12, 6))
+sns.scatterplot(x='actual_price', y='average_rating', data=df)
+plt.title('Product Satisfaction vs Actual Prices')
+plt.xlabel('Actual Price')
+plt.ylabel('Average Rating')
+plt.show()
+
+plt.figure(figsize=(15, 8))
+sns.scatterplot(x='discount', y='average_rating', data=top_discount_products, hue=selected_products, palette='viridis', size='discount', sizes=(50, 200))
+plt.title('Top 20 Products: Product Satisfaction vs Discounts')
+plt.xlabel('Discount')
+plt.ylabel('Average Rating')
+plt.legend(bbox_to_anchor=(0.5, -0.15), loc='upper center', title='Product ID')
+plt.show()
+
+# Clean 'actual_price' column and convert to numeric
+df['actual_price'] = pd.to_numeric(df['actual_price'].replace('[^\d.]', '', regex=True), errors='coerce')
+
+# Clean 'discount' column and convert to numeric
+df['discount'] = pd.to_numeric(df['discount'].replace('[^\d.]', '', regex=True), errors='coerce')
+
+# Exploring correlations between attributes
+plt.figure(figsize=(8, 4))
+
+# Correlation matrix
+correlation_matrix = df[['actual_price', 'discount', 'average_rating']].corr()
+
+# Heatmap for visualization
+sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm', linewidths=.5)
+plt.title('Correlation Matrix: Price, Discount, and Average Rating')
+plt.show()
+
+# Scatter plot matrix for detailed exploration
+sns.pairplot(df[['actual_price', 'discount', 'average_rating']])
+plt.suptitle('Scatter Plot Matrix: Price, Discount, and Average Rating', y=1.02)
+plt.show()
+
+# Text Classification (Example: Predicting if a product is out of stock)
+# Assuming 'out_of_stock' is the target variable
+X_text_classification = df['description'].fillna('').astype(str)
+y_text_classification = df['out_of_stock'].astype(int)
+
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X_text_classification, y_text_classification, test_size=0.2, random_state=42)
+
+# Text vectorization using TF-IDF
+vectorizer = TfidfVectorizer(stop_words='english', max_features=5000)
+X_train_tfidf = vectorizer.fit_transform(X_train)
+X_test_tfidf = vectorizer.transform(X_test)
+
+
+# Text classification using Naive Bayes
+classifier = MultinomialNB()
+classifier.fit(X_train_tfidf, y_train)
+y_pred = classifier.predict(X_test_tfidf)
+
+
+# Evaluate the text classification model
+print("\nText Classification Report:")
+print(classification_report(y_test, y_pred))
+print("Accuracy:", accuracy_score(y_test, y_pred))
+
+# Word Cloud for positive and negative sentiments (eg;Assuming 'out_of_stock' as a binary sentiment)
+positive_text = ' '.join(df[df['out_of_stock'] == 1]['description'].fillna('').astype(str))
+negative_text = ' '.join(df[df['out_of_stock'] == 0]['description'].fillna('').astype(str))
+
+wordcloud_positive = WordCloud(width=800, height=400, background_color='white').generate(positive_text)
+wordcloud_negative = WordCloud(width=800, height=400, background_color='white').generate(negative_text)
+
+plt.figure(figsize=(25, 18))
+plt.subplot(1, 2, 1)
+plt.imshow(wordcloud_positive, interpolation='bilinear')
+plt.axis('off')
+plt.title('Word Cloud for Out of Stock Products')
+plt.show()
+
+
+plt.figure(figsize=(25, 18))
+plt.subplot(1, 2, 2)
+plt.imshow(wordcloud_negative, interpolation='bilinear')
+plt.axis('off')
+plt.title('Word Cloud for In Stock Products')
+plt.show()
+
+# Additional Text Analysis Word frequency analysis)
+from sklearn.feature_extraction.text import CountVectorizer
+
+# Count Vectorization
+count_vectorizer = CountVectorizer(stop_words='english', max_features=20)
+X_count_vectorized = count_vectorizer.fit_transform(X_text_classification)
+
+# Word Frequency Analysis
+word_frequency_df = pd.DataFrame(X_count_vectorized.toarray(), columns=count_vectorizer.get_feature_names_out())
+word_frequency_sum = word_frequency_df.sum().sort_values(ascending=False)
+
+# Display the top 20 words by frequency
+plt.figure(figsize=(12, 6))
+sns.barplot(x=word_frequency_sum.index[:20], y=word_frequency_sum.values[:20])
+plt.title('Top 20 Words by Frequency in Product Descriptions')
+plt.xticks(rotation=45, ha='right')
+plt.show()
+
+
+
+
+
+
